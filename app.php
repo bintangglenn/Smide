@@ -23,8 +23,16 @@ if(isset($_FILES['msg']) && isset($_FILES['cert'])) {
 
  	$time = date_create(null, timezone_open("Asia/Jakarta"));
  	$uploadTime = date_format($time, "d-m-Y H:m:s");
- 	
- 	if(($file_ext == "p7m") && $file_size <= 4194304) {
+
+ 	$multiple = false;
+ 	foreach ($_SESSION['dataUpload'] as $value) {
+ 		if(strpos($value, substr($file_name, 0, -4)) !== false) {
+ 			$multiple = true;
+ 			$_SESSION['valid'] = 'There exists a file with same name';
+ 		}
+ 	}
+
+ 	if(($file_ext == "p7m") && $file_size <= 4194304 && $multiple == false) {
  		if($cert_ext == "pem") {
  			move_uploaded_file($cert_tmp, ("./tmp/" . $cert_name));
  			$checkedFormat = true;
@@ -64,7 +72,7 @@ if(isset($_FILES['msg']) && isset($_FILES['cert'])) {
 	 		$_SESSION['valid'] = 'Unsupported certificate format, only accept .p12 and .pem';
 	 	}
  	}
- 	else {
+ 	else if($multiple == false){
  		$_SESSION['valid'] = 'Unsupported message format, only accept .p7m';
  	}
  	header("location: index.php");
