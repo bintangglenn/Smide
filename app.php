@@ -26,22 +26,28 @@ if(isset($_FILES['msg']) && isset($_FILES['cert'])) {
  	
  	if(($file_ext == "p7m") && $file_size <= 4194304) {
  		if($cert_ext == "pem") {
+ 			move_uploaded_file($cert_tmp, ("./tmp/" . $cert_name));
  			$checkedFormat = true;
  		}
  		else if($cert_ext == "p12") {
- 			
+ 			move_uploaded_file($cert_tmp, ("./tmp/" . $cert_name));
+ 			exec('openssl pkcs12 -in ' . '"./tmp/' . $cert_name . '" -out ' . '"./tmp/' . substr($cert_name, 0, -4) . '.pem" -passin pass:' . $_POST['pass'] . ' -passout pass:' . $_POST['pass']);
+ 			unlink("./tmp/" . $cert_name);
+ 			$cert_name = substr($cert_name, 0, -4) . ".pem";
+ 			$checkedFormat = true;
  		}
  		else {
  			$checkedFormat = false;
  		}
+
  		if($checkedFormat) {
  			move_uploaded_file($file_tmp, ("./tmp/" . $file_name));
- 			move_uploaded_file($cert_tmp, ("./tmp/" . $cert_name));
- 			$out = shell_exec('openssl smime -decrypt -in ' . '"./tmp/' . $file_name . '" -inkey ' . '"./tmp/' . $cert_name . '" -inform DER -passin pass:' . $_POST['pass']);
+ 			$out = shell_exec('openssl smime -decrypt -in ' . '"./tmp/' . $file_name . '" -inkey ' . '"./tmp/' . $cert_name . '" -inform DER -passin pass:' . $_POST['pass'] . ' 2>&1');
  			unlink("./tmp/" . $file_name);
  			unlink("./tmp/" . $cert_name);
  			if(empty($out)) {
-		 		$_SESSION['valid'] = 'There is an error while decrypting';
+
+		 		$_SESSION['valid'] = 'There is an error while decrypting ';
  			}
  			else {
 	 			$start = strpos($out,"quoted-printable") + 18;
@@ -50,7 +56,7 @@ if(isset($_FILES['msg']) && isset($_FILES['cert'])) {
 	    		$message = substr($start, 0, $end);
 		 		$_SESSION['valid'] = 'Decryption success!';
 		 		$tmp = "key" . $_SESSION['idx'];
-		 		$_SESSION['dataUpload'][$tmp] = "<tr><td>" . $file_name . "</td><td>" . $uploadTime . "</td><td><form action=\"app.php\" method=\"post\" enctype=\"multipart/form-data\"><input type=\"hidden\" value=\"" . $file_name . "\" name=\"hapus\"/><input type=\"hidden\" value=\"" . $_SESSION['idx'] . "\" name=\"idxHapus\"/><input type=\"Submit\" value=\"Delete\" name=\"submit\"/></form></td><td>" . $message . "</td>";
+		 		$_SESSION['dataUpload'][$tmp] = "<tr><td>" . substr($file_name, 0, -4) . "</td><td>" . $uploadTime . "</td><td><form action=\"app.php\" method=\"post\" enctype=\"multipart/form-data\"><input type=\"hidden\" value=\"" . $file_name . "\" name=\"hapus\"/><input type=\"hidden\" value=\"" . $_SESSION['idx'] . "\" name=\"idxHapus\"/><input type=\"Submit\" value=\"Delete\" name=\"submit\"/></form></td><td>" . $message . "</td>";
 		 		$_SESSION['idx'] += 1;
 		 	}
 	 	}
