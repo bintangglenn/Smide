@@ -26,30 +26,42 @@ if(isset($_FILES['msg']) && isset($_FILES['cert'])) {
  	
  	if(($file_ext == "p7m") && $file_size <= 4194304) {
  		if($cert_ext == "pem") {
+ 			$checkedFormat = true;
+ 		}
+ 		else if($cert_ext == "p12") {
+ 			
+ 		}
+ 		else {
+ 			$checkedFormat = false;
+ 		}
+ 		if($checkedFormat) {
  			move_uploaded_file($file_tmp, ("./tmp/" . $file_name));
  			move_uploaded_file($cert_tmp, ("./tmp/" . $cert_name));
- 			$out = shell_exec('openssl smime -decrypt -in ' . '"./tmp/' . $file_name . '" -inkey ' . '"./tmp/' . $cert_name . '" -inform DER -passin pass:' . $_POST['pass'] . ' 2>&1');
+ 			$out = shell_exec('openssl smime -decrypt -in ' . '"./tmp/' . $file_name . '" -inkey ' . '"./tmp/' . $cert_name . '" -inform DER -passin pass:' . $_POST['pass']);
  			unlink("./tmp/" . $file_name);
  			unlink("./tmp/" . $cert_name);
- 			$start = strpos($out,"quoted-printable") + 18;
-    		$start = substr($out, $start);
-    		$end = strpos($start,"--------------") - 2;
-    		$message = substr($start, 0, $end);
-            echo $message;
- 			echo "pop";
-	 		// move_uploaded_file($file_tmp, ("./uploads/".$file_name));
-	 		// $_SESSION['valid'] = 'File berhasil diupload';
-	 		// array_push($_SESSION['dataUpload'], "<tr><td>" . $file_name . "</td><td>" . $file_size . "</td><td>" . $uploadTime . "</td><td><form action=\"app.php\" method=\"post\" enctype=\"multipart/form-data\"><input type=\"hidden\" value=\"" . $file_name . "\" name=\"hapus\"/><input type=\"hidden\" value=\"" . $_SESSION['idx'] . "\" name=\"idxHapus\"/><input type=\"Submit\" value=\"Hapus\" name=\"submit\"/></form></td><td>" .  . "</td>");
-	 		// $_SESSION['idx'] += 1;
+ 			if(empty($out)) {
+		 		$_SESSION['valid'] = 'There is an error while decrypting';
+ 			}
+ 			else {
+	 			$start = strpos($out,"quoted-printable") + 18;
+	    		$start = substr($out, $start);
+	    		$end = strpos($start,"--------------") - 2;
+	    		$message = substr($start, 0, $end);
+		 		$_SESSION['valid'] = 'Decryption success!';
+		 		$tmp = "key" . $_SESSION['idx'];
+		 		$_SESSION['dataUpload'][$tmp] = "<tr><td>" . $file_name . "</td><td>" . $uploadTime . "</td><td><form action=\"app.php\" method=\"post\" enctype=\"multipart/form-data\"><input type=\"hidden\" value=\"" . $file_name . "\" name=\"hapus\"/><input type=\"hidden\" value=\"" . $_SESSION['idx'] . "\" name=\"idxHapus\"/><input type=\"Submit\" value=\"Delete\" name=\"submit\"/></form></td><td>" . $message . "</td>";
+		 		$_SESSION['idx'] += 1;
+		 	}
 	 	}
 	 	else {
-	 		echo $cert_ext;
+	 		$_SESSION['valid'] = 'Unsupported certificate format, only accept .p12 and .pem';
 	 	}
  	}
  	else {
- 		$_SESSION['valid'] = 'File gagal divalidasi, tidak bisa diupload';
+ 		$_SESSION['valid'] = 'Unsupported message format, only accept .p7m';
  	}
- 	//header("location: index.php");
+ 	header("location: index.php");
 }
 else {
 	echo "hah";
@@ -57,6 +69,7 @@ else {
 
 if(isset($_POST['hapus'])) {
 	unlink("./uploads/" . $_POST['hapus']);
-	unset($_SESSION['dataUpload'][$_POST['idxHapus']]);
+	$tmp = "key" . $_POST['idxHapus'];
+	unset($_SESSION['dataUpload'][$tmp]);
 	header("location: index.php");
 }
