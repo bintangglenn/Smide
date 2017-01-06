@@ -75,7 +75,7 @@ if(isset($_FILES['msg']) && isset($_FILES['cert'])) {
  	else if($multiple == false){
  		$_SESSION['valid'] = 'Unsupported message format, only accept .p7m';
  	}
- 	header("location: index.php");
+ 	header("location: decryptEmail.php");
 }
 else {
 	echo "hah";
@@ -85,5 +85,13 @@ if(isset($_POST['hapus'])) {
 	unlink("./uploads/" . $_POST['hapus']);
 	$tmp = "key" . $_POST['idxHapus'];
 	unset($_SESSION['dataUpload'][$tmp]);
-	header("location: index.php");
+	header("location: decryptEmail.php");
+}
+
+if(isset($_POST['decryptEmail'])){
+	header("location: decryptEmail.php");
+} else if(isset($_POST['encryptFile'])){
+
+} else if(isset($_POST['decryptFile'])){
+
 }
